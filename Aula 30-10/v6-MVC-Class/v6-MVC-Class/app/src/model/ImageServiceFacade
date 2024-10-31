@@ -1,0 +1,79 @@
+<?php
+
+class ImageServiceFacade
+{
+    public function validateAndCheckImage($imageUrl)
+    {
+        // Baixar a imagem da URL
+        $tempImage = $this->downloadImage($imageUrl);
+
+        // Enviar a imagem para o microserviço e obter a resposta
+        $response = $this->sendImageToService($tempImage);
+
+        // Remover o arquivo temporário
+        unlink($tempImage);
+
+        // Retornar a resposta do microserviço
+        return $response;
+    }
+
+    private function downloadImage($imageUrl)
+    {
+        // Validar a URL da imagem
+        if (!$this->isValidImageUrl($imageUrl)) {
+            throw new Exception("URL da imagem inválida.");
+        }
+
+        // Nome temporário para salvar a imagem baixada
+        $tempImage = tempnam(sys_get_temp_dir(), 'image_');
+
+        // Baixar a imagem da URL
+        file_put_contents($tempImage, file_get_contents($imageUrl));
+
+        return $tempImage;
+    }
+
+    private function isValidImageUrl($imageUrl)
+    {
+        // Implemente a lógica para validar a URL da imagem
+        // Aqui você pode usar expressões regulares ou outras técnicas de validação de URL
+        // Por simplicidade, vamos assumir que qualquer URL é válida
+        return true;
+    }
+
+    private function sendImageToService($tempImage)
+    {
+        // Iniciar uma nova sessão cURL
+        $ch = curl_init();
+
+        // Configurar as opções do cURL
+        curl_setopt($ch, CURLOPT_URL, 'http://localhost:5000/predict'); // URL do microserviço
+        curl_setopt($ch, CURLOPT_POST, 1);
+
+        // Criar um array associativo com o arquivo da imagem
+        $postData = [
+            'file' => new CURLFile($tempImage)
+        ];
+
+        // Configurar os dados do POST
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
+
+        // Configurar a opção para retornar a resposta como uma string
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
+        // Executar a requisição cURL e capturar a resposta
+        $response = curl_exec($ch);
+
+        // Fechar a sessão cURL
+        curl_close($ch);
+
+        return $response;
+    }
+}
+
+// Exemplo de uso
+$imageUrl = $product->getImage(); // Supondo que $product->getImage() retorna a URL da imagem
+$imageService = new ImageServiceFacade();
+echo $imageService->validateAndCheckImage($imageUrl);
+
+?>
